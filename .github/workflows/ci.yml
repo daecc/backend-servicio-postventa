@@ -27,7 +27,7 @@ jobs:
             maven-
 
       - name: Run tests with coverage
-        run: ./mvnw test jacoco:report
+        run: mvn test jacoco:report
 
       - name: Upload test reports
         if: always()

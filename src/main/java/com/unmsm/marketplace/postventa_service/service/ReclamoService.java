@@ -3,18 +3,22 @@ package com.unmsm.marketplace.postventa_service.service;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.unmsm.marketplace.postventa_service.client.AnalyticsClient;
 import com.unmsm.marketplace.postventa_service.client.OrdenesClient;
 import com.unmsm.marketplace.postventa_service.dto.*;
 import com.unmsm.marketplace.postventa_service.model.*;
 import com.unmsm.marketplace.postventa_service.repository.*;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 @Service
@@ -27,6 +31,10 @@ public class ReclamoService {
     private final SaldoClienteRepository saldoClienteRepository;
     private final LogisticaInversaRepository logisticaInversaRepository;
     private final ObjectMapper objectMapper;
+    private final AnalyticsClient analyticsClient;
+
+    @Value("${analytics.api.key}")
+    private String analyticsApiKey;
 
     public ReclamoService(OrdenesClient ordenesClient,
                           TicketPostventaRepository ticketRepository,
@@ -34,7 +42,8 @@ public class ReclamoService {
                           TicketHistorialRepository historialRepository,
                           SaldoClienteRepository saldoClienteRepository,
                           LogisticaInversaRepository logisticaInversaRepository,
-                          ObjectMapper objectMapper) {
+                          ObjectMapper objectMapper,
+                          AnalyticsClient analyticsClient) {
         this.ordenesClient = ordenesClient;
         this.ticketRepository = ticketRepository;
         this.itemDetalleRepository = itemDetalleRepository;
@@ -42,6 +51,7 @@ public class ReclamoService {
         this.saldoClienteRepository = saldoClienteRepository;
         this.logisticaInversaRepository = logisticaInversaRepository;
         this.objectMapper = objectMapper;
+        this.analyticsClient = analyticsClient;
     }
 
     public List<OrdenMaestraResponseDTO> buscarOrdenesPorDni(String dni) {
@@ -107,6 +117,28 @@ public class ReclamoService {
         historial.setEstadoNuevo(1);
         historial.setComentario("Ticket creado");
         historialRepository.save(historial);
+
+        try {
+            analyticsClient.sendEvent(analyticsApiKey, new AnalyticsEvent(
+                UUID.randomUUID().toString(),
+                "TICKET_CREADO",
+                "postventa-service",
+                "ticket",
+                String.valueOf(ticket.getIdTicket()),
+                List.of(),
+                Instant.now().toString(),
+                Map.of(
+                    "id_ticket", ticket.getIdTicket(),
+                    "id_orden_maestra", ticket.getIdOMaestraRef(),
+                    "tipo_solicitud", ticket.getTipoSolicitud(),
+                    "motivo", ticket.getMotivoReclamo(),
+                    "fecha", ticket.getFechaApertura().toString(),
+                    "items_count", request.items().size()
+                )
+            ));
+        } catch (Exception e) {
+            System.err.println("[ANALYTICS] Error enviando TICKET_CREADO: " + e.getMessage());
+        }
 
         return toTicketResponse(ticket, items);
     }
@@ -236,6 +268,26 @@ public class ReclamoService {
         historial.setEstadoNuevo(2);
         historial.setComentario(request.comentario());
         historialRepository.save(historial);
+
+        try {
+            analyticsClient.sendEvent(analyticsApiKey, new AnalyticsEvent(
+                UUID.randomUUID().toString(),
+                "TICKET_APROBADO",
+                "postventa-service",
+                "ticket",
+                String.valueOf(ticket.getIdTicket()),
+                List.of(),
+                Instant.now().toString(),
+                Map.of(
+                    "id_ticket", ticket.getIdTicket(),
+                    "tipo_solicitud", ticket.getTipoSolicitud(),
+                    "fecha", ticket.getFechaApertura().toString(),
+                    "fecha_aprobacion", ticket.getFechaCierre().toString()
+                )
+            ));
+        } catch (Exception e) {
+            System.err.println("[ANALYTICS] Error enviando TICKET_APROBADO: " + e.getMessage());
+        }
 
         return toTicketResponse(ticket, items);
     }

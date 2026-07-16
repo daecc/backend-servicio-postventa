@@ -66,4 +66,4 @@ jobs:
       - name: Deploy to Railway
         run: railway up --service backend-servicio-postventa
         env:
-          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+          RAILWAY_TOKEN: ${{ secrets.TOKEN_BACKEND_POSTVENTA }}

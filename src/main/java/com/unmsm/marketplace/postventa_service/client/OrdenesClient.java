@@ -6,7 +6,7 @@ import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
-@FeignClient(name = "ordenes-service", url = "http://localhost:8081/api/v1/ordenes")
+@FeignClient(name = "ordenes-service", url = "https://backend-servicio-ordenes-production.up.railway.app/api/v1/ordenes")
 public interface OrdenesClient {
 
     @GetMapping("/cliente/{dni}")

@@ -16,7 +16,12 @@ public record TicketResponseDTO(
     List<ItemTicketDTO> items,
     List<Long> subOrdenesAAnular,
     List<Long> itemsAAnular,
-    BigDecimal montoSaldoGenerado
+    BigDecimal montoSaldoGenerado,
+    Long nuevoIdVendedor,
+    String nuevoNombreVendedor,
+    String nuevoProductoNombre,
+    BigDecimal nuevoProductoPrecio,
+    Integer nuevoProductoId
 ) {
     public record ItemTicketDTO(
         Long idOItemRef,

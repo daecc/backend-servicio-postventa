@@ -3,7 +3,9 @@ package com.unmsm.marketplace.postventa_service.service;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.unmsm.marketplace.postventa_service.client.AnalyticsClient;
+import com.unmsm.marketplace.postventa_service.client.CatalogClient;
 import com.unmsm.marketplace.postventa_service.client.OrdenesClient;
+import com.unmsm.marketplace.postventa_service.client.VendorClient;
 import com.unmsm.marketplace.postventa_service.dto.*;
 import com.unmsm.marketplace.postventa_service.model.*;
 import com.unmsm.marketplace.postventa_service.repository.*;
@@ -29,6 +31,8 @@ class ReclamoServiceTest {
     @Mock private LogisticaInversaRepository logisticaInversaRepository;
     @Mock private OrdenesClient ordenesClient;
     @Mock private AnalyticsClient analyticsClient;
+    @Mock private CatalogClient catalogClient;
+    @Mock private VendorClient vendorClient;
 
     @Spy
     private ObjectMapper objectMapper = new ObjectMapper();
@@ -67,7 +71,7 @@ class ReclamoServiceTest {
         );
         CrearTicketRequestDTO request = new CrearTicketRequestDTO(
             100L, "12345678", 1, "Producto defectuoso",
-            null, null, items, List.of(1L, 2L), null
+            null, null, null, null, null, null, items, List.of(1L, 2L), null
         );
 
         TicketPostventa ticketGuardado = new TicketPostventa();

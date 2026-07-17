@@ -3,6 +3,7 @@ package com.unmsm.marketplace.postventa_service.model;
 
 import jakarta.persistence.*;
 import lombok.Data;
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @Data
@@ -41,4 +42,18 @@ public class TicketPostventa {
     @Column(name = "items_anular_json", columnDefinition = "TEXT")
     private String itemsAnularJson;
 
+    @Column(name = "nuevo_id_vendedor")
+    private Long nuevoIdVendedor;
+
+    @Column(name = "nuevo_nombre_vendedor", length = 255)
+    private String nuevoNombreVendedor;
+
+    @Column(name = "nuevo_producto_nombre", length = 255)
+    private String nuevoProductoNombre;
+
+    @Column(name = "nuevo_producto_precio", precision = 10, scale = 2)
+    private BigDecimal nuevoProductoPrecio;
+
+    @Column(name = "nuevo_producto_id")
+    private Integer nuevoProductoId;
 }

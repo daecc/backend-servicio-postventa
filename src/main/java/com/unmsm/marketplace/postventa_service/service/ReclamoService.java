@@ -4,7 +4,9 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.unmsm.marketplace.postventa_service.client.AnalyticsClient;
+import com.unmsm.marketplace.postventa_service.client.CatalogClient;
 import com.unmsm.marketplace.postventa_service.client.OrdenesClient;
+import com.unmsm.marketplace.postventa_service.client.VendorClient;
 import com.unmsm.marketplace.postventa_service.dto.*;
 import com.unmsm.marketplace.postventa_service.model.*;
 import com.unmsm.marketplace.postventa_service.repository.*;
@@ -32,6 +34,8 @@ public class ReclamoService {
     private final LogisticaInversaRepository logisticaInversaRepository;
     private final ObjectMapper objectMapper;
     private final AnalyticsClient analyticsClient;
+    private final CatalogClient catalogClient;
+    private final VendorClient vendorClient;
 
     @Value("${analytics.api.key}")
     private String analyticsApiKey;
@@ -43,7 +47,9 @@ public class ReclamoService {
                           SaldoClienteRepository saldoClienteRepository,
                           LogisticaInversaRepository logisticaInversaRepository,
                           ObjectMapper objectMapper,
-                          AnalyticsClient analyticsClient) {
+                          AnalyticsClient analyticsClient,
+                          CatalogClient catalogClient,
+                          VendorClient vendorClient) {
         this.ordenesClient = ordenesClient;
         this.ticketRepository = ticketRepository;
         this.itemDetalleRepository = itemDetalleRepository;
@@ -52,6 +58,21 @@ public class ReclamoService {
         this.logisticaInversaRepository = logisticaInversaRepository;
         this.objectMapper = objectMapper;
         this.analyticsClient = analyticsClient;
+        this.catalogClient = catalogClient;
+        this.vendorClient = vendorClient;
+    }
+
+    public List<Map<String, Object>> obtenerCatalogoProductos() {
+        try {
+            Map<String, Object> response = catalogClient.obtenerProductos();
+            if (response != null && response.containsKey("data")) {
+                return (List<Map<String, Object>>) response.get("data");
+            }
+            return List.of();
+        } catch (Exception e) {
+            System.err.println("Error obteniendo catálogo: " + e.getMessage());
+            return List.of();
+        }
     }
 
     public List<OrdenMaestraResponseDTO> buscarOrdenesPorDni(String dni) {
@@ -81,6 +102,24 @@ public class ReclamoService {
         } catch (JsonProcessingException e) {
             throw new RuntimeException("Error serializando listas de anulación", e);
         }
+        if (request.tipoSolicitud() == 3) {
+            ticket.setNuevoIdVendedor(request.nuevoIdVendedor());
+            ticket.setNuevoProductoNombre(request.nuevoProductoNombre());
+            ticket.setNuevoProductoPrecio(request.nuevoProductoPrecio());
+            ticket.setNuevoProductoId(request.nuevoProductoId());
+            if (request.nuevoIdVendedor() != null) {
+                try {
+                    Map<String, Object> vendorData = vendorClient.obtenerNombreVendor(request.nuevoIdVendedor());
+                    if (vendorData != null && vendorData.containsKey("data")) {
+                        Map<String, Object> data = (Map<String, Object>) vendorData.get("data");
+                        ticket.setNuevoNombreVendedor((String) data.get("vendor_name"));
+                    }
+                } catch (Exception e) {
+                    System.err.println("Error obteniendo nombre del vendor: " + e.getMessage());
+                }
+            }
+        }
+
         ticket = ticketRepository.save(ticket);
 
         Long finalIdTicket = ticket.getIdTicket();
@@ -257,6 +296,24 @@ public class ReclamoService {
             log.setMetodoRetorno("Courier");
             log.setEstadoRetorno(1);
             logisticaInversaRepository.save(log);
+
+            for (TicketItemDetalle detalle : items) {
+                try {
+                    ordenesClient.ejecutarCambioProducto(new EjecutarCambioProductoRequestDTO(
+                        detalle.getIdOItemRef(),
+                        String.valueOf(ticket.getNuevoProductoId() != null
+                            ? ticket.getNuevoProductoId() : detalle.getIdOItemRef()),
+                        ticket.getNuevoProductoPrecio() != null
+                            ? ticket.getNuevoProductoPrecio() : detalle.getMontoAfectado(),
+                        1,
+                        ticket.getNuevoIdVendedor(),
+                        ticket.getNuevoNombreVendedor()
+                    ));
+                } catch (Exception e) {
+                    System.err.println("***** ERROR CAMBIO PRODUCTO item " + detalle.getIdOItemRef() + ": " + e.getMessage());
+                    e.printStackTrace(System.err);
+                }
+            }
         }
 
         ejecutarAnulaciones(ticket);
@@ -474,7 +531,12 @@ public class ReclamoService {
             itemDTOs,
             subOrdenesAAnular,
             itemsAAnular,
-            montoSaldo
+            montoSaldo,
+            ticket.getNuevoIdVendedor(),
+            ticket.getNuevoNombreVendedor(),
+            ticket.getNuevoProductoNombre(),
+            ticket.getNuevoProductoPrecio(),
+            ticket.getNuevoProductoId()
         );
     }
 }

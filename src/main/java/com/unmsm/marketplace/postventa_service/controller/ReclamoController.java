@@ -12,6 +12,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/v1/reclamos")
@@ -123,6 +124,14 @@ public class ReclamoController {
     public ResponseEntity<Void> anularItem(@Parameter(description = "ID del item") @PathVariable Long id) {
         reclamoService.anularItem(id);
         return ResponseEntity.ok().build();
+    }
+
+    @GetMapping("/catalogo-productos")
+    @Operation(summary = "Obtener catálogo de productos", description = "Proxy: obtiene todos los productos del catalog-service para seleccionar producto de reemplazo en cambio de producto")
+    @ApiResponse(responseCode = "200", description = "Lista de productos del catálogo")
+    public ResponseEntity<List<Map<String, Object>>> obtenerCatalogoProductos() {
+        List<Map<String, Object>> productos = reclamoService.obtenerCatalogoProductos();
+        return ResponseEntity.ok(productos);
     }
 
     @PostMapping("/items/detalle")

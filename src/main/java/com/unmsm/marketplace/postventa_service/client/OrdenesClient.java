@@ -1,12 +1,13 @@
 package com.unmsm.marketplace.postventa_service.client;
 
+import com.unmsm.marketplace.postventa_service.dto.EjecutarCambioProductoRequestDTO;
 import com.unmsm.marketplace.postventa_service.dto.OrdenMaestraResponseDTO;
 import com.unmsm.marketplace.postventa_service.dto.OrdenItemResponseDTO;
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
-@FeignClient(name = "ordenes-service", url = "https://backend-servicio-ordenes-production.up.railway.app/api/v1/ordenes")
+@FeignClient(name = "ordenes-service", url = "${ordenes.service.url}")
 public interface OrdenesClient {
 
     @GetMapping("/cliente/{dni}")
@@ -38,4 +39,7 @@ public interface OrdenesClient {
 
     @PostMapping("/items/detalle")
     List<OrdenItemResponseDTO> obtenerDetalleItemsPorIds(@RequestBody List<Long> ids);
+
+    @PutMapping("/cambio-producto")
+    void ejecutarCambioProducto(@RequestBody EjecutarCambioProductoRequestDTO request);
 }

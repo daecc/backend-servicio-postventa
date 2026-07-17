@@ -10,6 +10,10 @@ public record CrearTicketRequestDTO(
     String motivoReclamo,
     String nuevaTalla,
     String idProductoNuevoRef,
+    Long nuevoIdVendedor,
+    String nuevoProductoNombre,
+    BigDecimal nuevoProductoPrecio,
+    Integer nuevoProductoId,
     List<ItemReclamoDTO> items,
     List<Long> subOrdenesAAnular,
     List<Long> itemsAAnular
